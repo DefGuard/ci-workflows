@@ -1,0 +1,17 @@
+name: Hello World
+
+on:
+  workflow_call:
+    inputs:
+      message:
+        description: Message to print
+        type: string
+        default: "Hello from defguard/ci-workflows"
+
+jobs:
+  hello:
+    name: Hello World
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "${{ inputs.message }}"
+        shell: bash
