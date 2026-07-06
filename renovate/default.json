@@ -1,0 +1,52 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "DefGuard shared Renovate preset",
+  "extends": ["config:recommended"],
+  "timezone": "Europe/Warsaw",
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 10,
+  "labels": ["dependencies"],
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "matchManagers": ["cargo"],
+      "matchBaseBranches": ["dev"],
+      "groupName": "rust dependencies",
+      "schedule": ["every weekend"]
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchBaseBranches": ["dev"],
+      "groupName": "frontend dependencies",
+      "schedule": ["every weekend"]
+    },
+    {
+      "matchManagers": ["pub"],
+      "matchBaseBranches": ["dev"],
+      "groupName": "dart/flutter dependencies",
+      "schedule": ["every weekend"]
+    },
+    {
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "matchBaseBranches": ["dev"],
+      "groupName": "docker base images",
+      "schedule": ["every weekend"]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchBaseBranches": ["dev"],
+      "groupName": "github actions",
+      "schedule": ["every weekend"]
+    },
+    {
+      "description": "Disable routine updates on stable, release, and main branches",
+      "matchBaseBranches": ["/^stable\\//", "/^release\\//", "main"],
+      "enabled": false
+    },
+    {
+      "description": "Re-enable for vulnerability alerts on all branches",
+      "isVulnerabilityAlert": true,
+      "enabled": true
+    }
+  ]
+}
