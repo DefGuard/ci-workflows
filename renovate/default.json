@@ -7,6 +7,7 @@
   "prConcurrentLimit": 10,
   "labels": ["dependencies"],
   "osvVulnerabilityAlerts": true,
+  "dependencyDashboard": true,
   "packageRules": [
     {
       "description": "Disable all routine updates by default",
@@ -17,41 +18,48 @@
       "matchBaseBranches": ["dev"],
       "enabled": true,
       "groupName": "rust dependencies",
-      "schedule": ["* * * * 0,6"]
+      "schedule": ["* * * * 0,6"],
+      "minimumReleaseAge": "7 days"
     },
     {
       "matchManagers": ["npm"],
       "matchBaseBranches": ["dev"],
       "enabled": true,
       "groupName": "frontend dependencies",
-      "schedule": ["* * * * 0,6"]
+      "schedule": ["* * * * 0,6"],
+      "minimumReleaseAge": "7 days"
     },
     {
       "matchManagers": ["pub"],
       "matchBaseBranches": ["dev"],
       "enabled": true,
       "groupName": "dart/flutter dependencies",
-      "schedule": ["* * * * 0,6"]
+      "schedule": ["* * * * 0,6"],
+      "minimumReleaseAge": "7 days"
     },
     {
       "matchDatasources": ["docker"],
       "matchBaseBranches": ["dev"],
       "enabled": true,
       "groupName": "docker base images",
-      "schedule": ["* * * * 0,6"]
+      "schedule": ["* * * * 0,6"],
+      "minimumReleaseAge": "7 days"
     },
     {
       "matchManagers": ["github-actions"],
       "matchBaseBranches": ["dev"],
       "enabled": true,
       "groupName": "github actions",
-      "schedule": ["* * * * 0,6"]
+      "schedule": ["* * * * 0,6"],
+      "minimumReleaseAge": "7 days"
     },
     {
       "description": "Re-enable for vulnerability alerts on all branches",
       "isVulnerabilityAlert": true,
       "enabled": true,
-      "groupName": "security updates"
+      "groupName": "security updates",
+      "minimumReleaseAge": "0 days",
+      "additionalLabels": ["security"]
     },
     {
       "isVulnerabilityAlert": true,
