@@ -27,7 +27,7 @@
       "schedule": ["at any time"]
     },
     {
-      "matchManagers": ["dockerfile", "docker-compose"],
+      "matchDatasources": ["docker"],
       "matchBaseBranches": ["dev"],
       "groupName": "docker base images",
       "schedule": ["at any time"]
