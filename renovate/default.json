@@ -8,15 +8,21 @@
   "labels": ["dependencies"],
   "osvVulnerabilityAlerts": true,
   "dependencyDashboard": true,
+  "vulnerabilityAlerts": {
+    "groupName": "security updates",
+    "additionalLabels": ["security"],
+    "minimumReleaseAge": "0 days"
+  },
   "packageRules": [
     {
-      "description": "Disable all routine updates by default",
+      "description": "Disable routine updates on stable, release, and main branches",
+      "matchBaseBranches": ["/^(stable|release)\\/./", "main"],
+      "matchUpdateTypes": ["major", "minor", "patch", "pin", "digest", "replacement"],
       "enabled": false
     },
     {
       "matchManagers": ["cargo"],
       "matchBaseBranches": ["dev"],
-      "enabled": true,
       "groupName": "rust dependencies",
       "schedule": ["* * * * 0,6"],
       "minimumReleaseAge": "7 days"
@@ -24,7 +30,6 @@
     {
       "matchManagers": ["npm"],
       "matchBaseBranches": ["dev"],
-      "enabled": true,
       "groupName": "frontend dependencies",
       "schedule": ["* * * * 0,6"],
       "minimumReleaseAge": "7 days"
@@ -32,7 +37,6 @@
     {
       "matchManagers": ["pub"],
       "matchBaseBranches": ["dev"],
-      "enabled": true,
       "groupName": "dart/flutter dependencies",
       "schedule": ["* * * * 0,6"],
       "minimumReleaseAge": "7 days"
@@ -40,7 +44,6 @@
     {
       "matchDatasources": ["docker"],
       "matchBaseBranches": ["dev"],
-      "enabled": true,
       "groupName": "docker base images",
       "schedule": ["* * * * 0,6"],
       "minimumReleaseAge": "7 days"
@@ -48,43 +51,9 @@
     {
       "matchManagers": ["github-actions"],
       "matchBaseBranches": ["dev"],
-      "enabled": true,
       "groupName": "github actions",
       "schedule": ["* * * * 0,6"],
       "minimumReleaseAge": "7 days"
-    },
-    {
-      "description": "Re-enable for vulnerability alerts on all branches",
-      "isVulnerabilityAlert": true,
-      "enabled": true,
-      "groupName": "security updates",
-      "minimumReleaseAge": "0 days",
-      "additionalLabels": ["security"]
-    },
-    {
-      "isVulnerabilityAlert": true,
-      "matchManagers": ["cargo"],
-      "groupName": "rust security updates"
-    },
-    {
-      "isVulnerabilityAlert": true,
-      "matchManagers": ["npm"],
-      "groupName": "frontend security updates"
-    },
-    {
-      "isVulnerabilityAlert": true,
-      "matchManagers": ["pub"],
-      "groupName": "dart/flutter security updates"
-    },
-    {
-      "isVulnerabilityAlert": true,
-      "matchDatasources": ["docker"],
-      "groupName": "docker security updates"
-    },
-    {
-      "isVulnerabilityAlert": true,
-      "matchManagers": ["github-actions"],
-      "groupName": "github actions security updates"
     }
   ]
 }
