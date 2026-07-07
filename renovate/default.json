@@ -9,39 +9,44 @@
   "osvVulnerabilityAlerts": true,
   "packageRules": [
     {
+      "description": "Disable all routine updates by default",
+      "matchPackageNames": ["*"],
+      "enabled": false
+    },
+    {
       "matchManagers": ["cargo"],
       "matchBaseBranches": ["dev"],
+      "enabled": true,
       "groupName": "rust dependencies",
       "schedule": ["* * * * 0,6"]
     },
     {
       "matchManagers": ["npm"],
       "matchBaseBranches": ["dev"],
+      "enabled": true,
       "groupName": "frontend dependencies",
       "schedule": ["* * * * 0,6"]
     },
     {
       "matchManagers": ["pub"],
       "matchBaseBranches": ["dev"],
+      "enabled": true,
       "groupName": "dart/flutter dependencies",
       "schedule": ["* * * * 0,6"]
     },
     {
       "matchDatasources": ["docker"],
       "matchBaseBranches": ["dev"],
+      "enabled": true,
       "groupName": "docker base images",
       "schedule": ["* * * * 0,6"]
     },
     {
       "matchManagers": ["github-actions"],
       "matchBaseBranches": ["dev"],
+      "enabled": true,
       "groupName": "github actions",
       "schedule": ["* * * * 0,6"]
-    },
-    {
-      "description": "Disable routine updates on stable, release, and main branches",
-      "matchBaseBranches": ["/^stable/", "/^release/", "main"],
-      "enabled": false
     },
     {
       "description": "Re-enable for vulnerability alerts on all branches",
