@@ -40,7 +40,7 @@
     },
     {
       "description": "Disable routine updates on stable, release, and main branches",
-      "matchBaseBranches": ["/^stable\\//", "/^release\\//", "main"],
+      "matchBaseBranches": ["/^stable/", "/^release/", "main"],
       "enabled": false
     },
     {
