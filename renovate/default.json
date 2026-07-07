@@ -12,31 +12,31 @@
       "matchManagers": ["cargo"],
       "matchBaseBranches": ["dev"],
       "groupName": "rust dependencies",
-      "schedule": ["at any time"]
+      "schedule": ["on weekends"]
     },
     {
       "matchManagers": ["npm"],
       "matchBaseBranches": ["dev"],
       "groupName": "frontend dependencies",
-      "schedule": ["at any time"]
+      "schedule": ["on weekends"]
     },
     {
       "matchManagers": ["pub"],
       "matchBaseBranches": ["dev"],
       "groupName": "dart/flutter dependencies",
-      "schedule": ["at any time"]
+      "schedule": ["on weekends"]
     },
     {
       "matchDatasources": ["docker"],
       "matchBaseBranches": ["dev"],
       "groupName": "docker base images",
-      "schedule": ["at any time"]
+      "schedule": ["on weekends"]
     },
     {
       "matchManagers": ["github-actions"],
       "matchBaseBranches": ["dev"],
       "groupName": "github actions",
-      "schedule": ["at any time"]
+      "schedule": ["on weekends"]
     },
     {
       "description": "Disable routine updates on stable, release, and main branches",
