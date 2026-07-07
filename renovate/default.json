@@ -10,7 +10,6 @@
   "packageRules": [
     {
       "description": "Disable all routine updates by default",
-      "matchPackageNames": ["*"],
       "enabled": false
     },
     {
@@ -51,7 +50,33 @@
     {
       "description": "Re-enable for vulnerability alerts on all branches",
       "isVulnerabilityAlert": true,
-      "enabled": true
+      "enabled": true,
+      "groupName": "security updates"
+    },
+    {
+      "isVulnerabilityAlert": true,
+      "matchManagers": ["cargo"],
+      "groupName": "rust security updates"
+    },
+    {
+      "isVulnerabilityAlert": true,
+      "matchManagers": ["npm"],
+      "groupName": "frontend security updates"
+    },
+    {
+      "isVulnerabilityAlert": true,
+      "matchManagers": ["pub"],
+      "groupName": "dart/flutter security updates"
+    },
+    {
+      "isVulnerabilityAlert": true,
+      "matchDatasources": ["docker"],
+      "groupName": "docker security updates"
+    },
+    {
+      "isVulnerabilityAlert": true,
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions security updates"
     }
   ]
 }
