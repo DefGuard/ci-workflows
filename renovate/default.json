@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": "DefGuard shared Renovate preset",
-  "extends": ["config:recommended"],
+  "extends": ["config:best-practices"],
   "timezone": "Europe/Warsaw",
   "prHourlyLimit": 2,
   "prConcurrentLimit": 10,
@@ -9,7 +9,6 @@
   "osvVulnerabilityAlerts": true,
   "dependencyDashboard": true,
   "vulnerabilityAlerts": {
-    "groupName": "security updates",
     "additionalLabels": ["security"],
     "minimumReleaseAge": "0 days"
   },
