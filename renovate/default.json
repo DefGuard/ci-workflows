@@ -3,7 +3,7 @@
   "description": "DefGuard shared Renovate preset",
   "extends": ["config:best-practices"],
   "timezone": "Europe/Warsaw",
-  "baseBranchPatterns": ["dev", "main", "/^stable\\//", "/^release\\/"],
+  "baseBranchPatterns": ["dev", "main", "/^stable\\//", "/^release\\//"],
   "labels": ["dependencies", "renovate"],
   "dependencyDashboard": true,
   "osvVulnerabilityAlerts": true,
@@ -17,9 +17,7 @@
       "description": "Only security updates on stable, release, and main branches",
       "matchBaseBranches": ["/^stable/.*/", "/^release/.*/", "main"],
       "enabled": false,
-      "matchPackageNames": [
-        "*"
-      ]
+      "matchPackageNames": ["*"]
     },
     {
       "matchManagers": ["cargo"],
