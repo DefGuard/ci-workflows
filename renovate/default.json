@@ -3,55 +3,51 @@
   "description": "DefGuard shared Renovate preset",
   "extends": ["config:best-practices"],
   "timezone": "Europe/Warsaw",
-  "prHourlyLimit": 2,
-  "prConcurrentLimit": 10,
-  "labels": ["dependencies"],
-  "osvVulnerabilityAlerts": true,
+  "labels": ["dependencies", "renovate"],
   "dependencyDashboard": true,
+  "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
+    "enabled": true,
     "additionalLabels": ["security"],
     "minimumReleaseAge": "0 days"
   },
   "packageRules": [
     {
-      "description": "Disable routine updates on stable, release, and main branches",
-      "matchBaseBranches": ["/^(stable|release)\\/./", "main"],
-      "matchUpdateTypes": ["major", "minor", "patch", "pin", "digest", "replacement"],
-      "enabled": false
+      "description": "Only security updates on stable, release, and main branches",
+      "matchBaseBranches": ["/^stable/.*/", "/^release/.*/", "main"],
+      "enabled": false,
+      "matchPackageNames": [
+        "*"
+      ]
     },
     {
       "matchManagers": ["cargo"],
       "matchBaseBranches": ["dev"],
       "groupName": "rust dependencies",
-      "schedule": ["* * * * 0,6"],
       "minimumReleaseAge": "7 days"
     },
     {
       "matchManagers": ["npm"],
       "matchBaseBranches": ["dev"],
       "groupName": "frontend dependencies",
-      "schedule": ["* * * * 0,6"],
       "minimumReleaseAge": "7 days"
     },
     {
       "matchManagers": ["pub"],
       "matchBaseBranches": ["dev"],
       "groupName": "dart/flutter dependencies",
-      "schedule": ["* * * * 0,6"],
       "minimumReleaseAge": "7 days"
     },
     {
       "matchDatasources": ["docker"],
       "matchBaseBranches": ["dev"],
       "groupName": "docker base images",
-      "schedule": ["* * * * 0,6"],
       "minimumReleaseAge": "7 days"
     },
     {
       "matchManagers": ["github-actions"],
       "matchBaseBranches": ["dev"],
       "groupName": "github actions",
-      "schedule": ["* * * * 0,6"],
       "minimumReleaseAge": "7 days"
     }
   ]
