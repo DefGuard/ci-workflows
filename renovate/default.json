@@ -3,6 +3,7 @@
   "description": "DefGuard shared Renovate preset",
   "extends": ["config:best-practices"],
   "timezone": "Europe/Warsaw",
+  "baseBranchPatterns": ["dev", "main", "/^stable\\//", "/^release\\/"],
   "labels": ["dependencies", "renovate"],
   "dependencyDashboard": true,
   "osvVulnerabilityAlerts": true,
