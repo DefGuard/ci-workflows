@@ -9,7 +9,7 @@
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
     "enabled": true,
-    "recreateClosed": true,
+    "recreateWhen": "always",
     "addLabels": ["security"],
     "minimumReleaseAge": "0 days"
   },
