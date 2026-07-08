@@ -10,7 +10,7 @@
   "vulnerabilityAlerts": {
     "enabled": true,
     "recreateClosed": true,
-    "additionalLabels": ["security"],
+    "addLabels": ["security"],
     "minimumReleaseAge": "0 days"
   },
   "packageRules": [
