@@ -13,7 +13,8 @@
     "enabled": true,
     "recreateWhen": "always",
     "addLabels": ["security"],
-    "minimumReleaseAge": "0 days"
+    "minimumReleaseAge": "0 days",
+    "groupName": "security updates"
   },
   "packageRules": [
     {
