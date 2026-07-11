@@ -18,6 +18,8 @@ uses: defguard/ci-workflows/.github/workflows/rehearsal.yml@v1
 
 **Renovate keeps the pin current.** A regex manager in the shared Renovate preset (`renovate/default.json`) scans product-repo workflow files for `DefGuard/ci-workflows/.+@vX.Y.Z` and opens a single grouped PR when a new tag is published. The fix-still-lands-once property is preserved - just behind a merge button.
 
+> **Note:** this tag-pinning applies only to cross-repo `workflow_call` references (our own reusable workflows). Third-party GitHub Actions marketplace actions (e.g. `actions/checkout`) continue to use the SHA-pinning enforced by `config:best-practices` in the shared Renovate preset. The two ref types are handled by separate Renovate managers and do not conflict.
+
 **`@v1` exists as a convenience pointer** for local/dispatch use, but product repos **must not reference it** in committed workflow files.
 
 ### How to cut a release
