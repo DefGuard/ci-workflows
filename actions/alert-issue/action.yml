@@ -269,29 +269,33 @@ runs:
         echo "::notice::Issue #${ISSUE_NUMBER} added to current sprint"
         echo "::endgroup::"
 
-        # ── Set Status to "Development ready" ────────────────────────────
-        status_field_id=$(echo "${project_json}" | jq -r '.data.organization.projectV2.statusField.id // ""')
-        dev_ready_opt=$(echo "${project_json}" | jq -r '.data.organization.projectV2.statusField.options[]? | select(.name == "Development ready") | .id // ""')
+        # ── Set Status to "Development ready" (new issues only) ──────────
+        ISSUE_CREATED='${{ steps.find_or_create.outputs.created }}'
 
-        if [ -n "${status_field_id}" ] && [ "${status_field_id}" != "null" ] && [ -n "${dev_ready_opt}" ] && [ "${dev_ready_opt}" != "null" ]; then
-          echo "::group::Setting status to 'Development ready'"
-          gh api graphql -f query='
-            mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!) {
-              updateProjectV2ItemFieldValue(input:{
-                projectId:$projectId
-                itemId:$itemId
-                fieldId:$fieldId
-                value:{singleSelectOptionId:$optionId}
-              }) {
-                projectV2Item { id }
+        if [ "${ISSUE_CREATED}" = 'true' ]; then
+          status_field_id=$(echo "${project_json}" | jq -r '.data.organization.projectV2.statusField.id // ""')
+          dev_ready_opt=$(echo "${project_json}" | jq -r '.data.organization.projectV2.statusField.options[]? | select(.name == "Development ready") | .id // ""')
+
+          if [ -n "${status_field_id}" ] && [ "${status_field_id}" != "null" ] && [ -n "${dev_ready_opt}" ] && [ "${dev_ready_opt}" != "null" ]; then
+            echo "::group::Setting status to 'Development ready'"
+            gh api graphql -f query='
+              mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!) {
+                updateProjectV2ItemFieldValue(input:{
+                  projectId:$projectId
+                  itemId:$itemId
+                  fieldId:$fieldId
+                  value:{singleSelectOptionId:$optionId}
+                }) {
+                  projectV2Item { id }
+                }
               }
-            }
-          ' -F projectId="${project_id}" \
-            -F itemId="${item_id}" \
-            -F fieldId="${status_field_id}" \
-            -F optionId="${dev_ready_opt}"
-          echo "::notice::Status set to 'Development ready'"
-          echo "::endgroup::"
-        else
-          echo "::warning::Status field or 'Development ready' option not found on project #${PROJECT_NUMBER} — skipping status set"
+            ' -F projectId="${project_id}" \
+              -F itemId="${item_id}" \
+              -F fieldId="${status_field_id}" \
+              -F optionId="${dev_ready_opt}"
+            echo "::notice::Status set to 'Development ready'"
+            echo "::endgroup::"
+          else
+            echo "::warning::Status field or 'Development ready' option not found on project #${PROJECT_NUMBER} — skipping status set"
+          fi
         fi
