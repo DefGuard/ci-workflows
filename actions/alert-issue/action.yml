@@ -1,9 +1,9 @@
 name: Alert Issue
 description: |
   Creates or updates a release-blocker labeled GitHub issue for CI failures.
-  Deduplicates by title prefix + labels on open issues only — repeats as a
-  comment instead of creating a duplicate. Optionally adds the issue to the
-  current sprint iteration (env-gated).
+  Deduplicates by title prefix on open issues only — repeats as a comment
+  instead of creating a duplicate. Optionally adds the issue to the current
+  sprint iteration (env-gated).
 
 inputs:
   source:
@@ -26,7 +26,7 @@ inputs:
     required: false
     default: ''
   extra_labels:
-    description: 'Additional comma-separated labels beyond release-blocker and source'
+    description: 'Additional comma-separated labels beyond release-blocker'
     required: false
     default: ''
 
@@ -65,7 +65,6 @@ runs:
         existing=$(gh issue list \
           --repo "${REPO}" \
           --label 'release-blocker' \
-          --label "${SOURCE}" \
           --search "\"${title_prefix}\" in:title" \
           --json number --jq '.[0].number // ""' 2>/dev/null || true)
 
@@ -73,7 +72,7 @@ runs:
 
         if [ -z "${existing}" ]; then
           # ── No open issue → create a new one ──────────────────────────────
-          labels="release-blocker,${SOURCE}"
+          labels='release-blocker'
           if [ -n "${EXTRA_LABELS}" ]; then
             labels="${labels},${EXTRA_LABELS}"
           fi
