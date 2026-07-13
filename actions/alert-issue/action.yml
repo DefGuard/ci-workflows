@@ -1,0 +1,262 @@
+name: Alert Issue
+description: |
+  Creates or updates a release-blocker labeled GitHub issue for CI failures.
+  Deduplicates by title prefix + labels on open issues only — repeats as a
+  comment instead of creating a duplicate. Optionally adds the issue to the
+  current sprint iteration (env-gated).
+
+inputs:
+  source:
+    description: 'Alert source identifier (rehearsal, e2e, forward-port)'
+    required: true
+  repo:
+    description: 'Target repo for the issue (full org/repo, e.g. defguard/defguard)'
+    required: true
+  branch:
+    description: 'Branch that failed'
+    required: true
+  failure_summary:
+    description: 'Human-readable failure description for the issue title and body'
+    required: true
+  run_link:
+    description: 'URL to the failed workflow run'
+    required: true
+  assignees:
+    description: 'Comma-separated GitHub usernames to assign'
+    required: false
+    default: ''
+  extra_labels:
+    description: 'Additional comma-separated labels beyond release-blocker and source'
+    required: false
+    default: ''
+
+outputs:
+  issue_number:
+    description: 'The GitHub issue number'
+    value: ${{ steps.find_or_create.outputs.issue_number }}
+  issue_url:
+    description: 'The GitHub issue URL'
+    value: ${{ steps.find_or_create.outputs.issue_url }}
+  created:
+    description: 'Whether a new issue was created (true) or an existing one was updated (false)'
+    value: ${{ steps.find_or_create.outputs.created }}
+
+runs:
+  using: composite
+  steps:
+    # ── Step 1: Find existing open issue, or create / comment ──────────────
+    - name: Find or create alert issue
+      id: find_or_create
+      shell: bash
+      env:
+        GH_TOKEN: ${{ env.ALERT_TOKEN }}
+      run: |
+        set -euo pipefail
+
+        SOURCE='${{ inputs.source }}'
+        REPO='${{ inputs.repo }}'
+        BRANCH='${{ inputs.branch }}'
+        SUMMARY='${{ inputs.failure_summary }}'
+        RUN_LINK='${{ inputs.run_link }}'
+        EXTRA_LABELS='${{ inputs.extra_labels }}'
+
+        # ── Search for an existing OPEN issue (closed = resolved episode) ──
+        title_prefix="[${SOURCE}] ${BRANCH}:"
+        existing=$(gh issue list \
+          --repo "${REPO}" \
+          --label 'release-blocker' \
+          --label "${SOURCE}" \
+          --search "\"${title_prefix}\" in:title" \
+          --json number --jq '.[0].number // ""' 2>/dev/null || true)
+
+        now=$(date -u +'%Y-%m-%d %H:%M UTC')
+
+        if [ -z "${existing}" ]; then
+          # ── No open issue → create a new one ──────────────────────────────
+          labels="release-blocker,${SOURCE}"
+          if [ -n "${EXTRA_LABELS}" ]; then
+            labels="${labels},${EXTRA_LABELS}"
+          fi
+
+          printf -v body '### %s failed on `%s` `%s`\n\n**Run:** %s\n**When:** %s\n**Summary:** %s\n\n<!-- alert-key: %s:%s:%s -->\n' \
+            "${SOURCE}" "${REPO}" "${BRANCH}" "${RUN_LINK}" "${now}" "${SUMMARY}" \
+            "${SOURCE}" "${REPO}" "${BRANCH}"
+
+          new_issue_url=$(gh issue create \
+            --repo "${REPO}" \
+            --title "${title_prefix} ${SUMMARY}" \
+            --label "${labels}" \
+            --body "${body}")
+
+          issue_number=$(echo "${new_issue_url}" | grep -oP '\d+$' || true)
+          issue_url="${new_issue_url}"
+          created='true'
+
+          echo "::notice::Created issue #${issue_number} in ${REPO}"
+        else
+          # ── Open issue exists → comment, never re-open ────────────────────
+          issue_number="${existing}"
+          issue_url="https://github.com/${REPO}/issues/${issue_number}"
+          created='false'
+
+          printf -v comment_body '**Recurrence:** %s — %s\n**Summary:** %s\n' \
+            "${RUN_LINK}" "${now}" "${SUMMARY}"
+
+          gh issue comment "${issue_number}" \
+            --repo "${REPO}" \
+            --body "${comment_body}"
+
+          echo "::notice::Commented on existing issue #${issue_number} in ${REPO}"
+        fi
+
+        # ── Outputs ────────────────────────────────────────────────────────
+        echo "issue_number=${issue_number}" >> "${GITHUB_OUTPUT}"
+        echo "issue_url=${issue_url}" >> "${GITHUB_OUTPUT}"
+        echo "created=${created}" >> "${GITHUB_OUTPUT}"
+
+    # ── Step 2: Assign users (if requested) ─────────────────────────────────
+    - name: Assign users
+      if: inputs.assignees != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ env.ALERT_TOKEN }}
+      run: |
+        set -euo pipefail
+        gh issue edit '${{ steps.find_or_create.outputs.issue_number }}' \
+          --repo '${{ inputs.repo }}' \
+          --add-assignee '${{ inputs.assignees }}'
+
+    # ── Step 3: Add to current sprint (env-gated) ───────────────────────────
+    - name: Add to current sprint
+      shell: bash
+      env:
+        GH_TOKEN: ${{ env.ALERT_TOKEN }}
+      run: |
+        set -euo pipefail
+
+        # ── Guard: skip if SPRINT_PROJECT_NUMBER is not configured ─────────
+        SPRINT_PROJECT_NUMBER='${{ env.SPRINT_PROJECT_NUMBER }}'
+        if [ -z "${SPRINT_PROJECT_NUMBER}" ]; then
+          echo "Skipping sprint-add: SPRINT_PROJECT_NUMBER env var not set"
+          exit 0
+        fi
+
+        REPO='${{ inputs.repo }}'
+        ISSUE_NUMBER='${{ steps.find_or_create.outputs.issue_number }}'
+        PROJECT_NUMBER="${SPRINT_PROJECT_NUMBER}"
+
+        ITERATION_FIELD='${{ env.SPRINT_ITERATION_FIELD }}'
+        if [ -z "${ITERATION_FIELD}" ]; then
+          ITERATION_FIELD='Sprint'
+        fi
+
+        # ── Extract org from repo input ────────────────────────────────────
+        ORG="${REPO%%/*}"
+
+        # ── Query project for iteration field and current iterations ───────
+        echo "::group::Querying project #${PROJECT_NUMBER} for iteration field '${ITERATION_FIELD}'"
+        project_json=$(gh api graphql -f query='
+          query($org:String!, $projectNumber:Int!, $fieldName:String!) {
+            organization(login:$org) {
+              projectV2(number:$projectNumber) {
+                id
+                field(name:$fieldName) {
+                  ... on ProjectV2IterationField {
+                    id
+                    configuration {
+                      iterations {
+                        id
+                        title
+                        startDate
+                        duration
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ' -F org="${ORG}" -F projectNumber="${PROJECT_NUMBER}" -F fieldName="${ITERATION_FIELD}")
+
+        project_id=$(echo "${project_json}" | jq -r '.data.organization.projectV2.id')
+        field_id=$(echo "${project_json}" | jq -r '.data.organization.projectV2.field.id // ""')
+
+        if [ -z "${field_id}" ] || [ "${field_id}" = "null" ]; then
+          echo "::endgroup::"
+          echo "::warning::Iteration field '${ITERATION_FIELD}' not found on project #${PROJECT_NUMBER} — skipping sprint-add"
+          exit 0
+        fi
+
+        echo "Project ID: ${project_id}"
+        echo "Field ID:   ${field_id}"
+        echo "::endgroup::"
+
+        # ── Resolve current iteration (date-range match) ───────────────────
+        today=$(date -u +%Y-%m-%d)
+        today_epoch=$(date -d "${today}" +%s)
+
+        iterations_json=$(echo "${project_json}" | jq -c '.data.organization.projectV2.field.configuration.iterations[]? // empty')
+        current_iter=""
+
+        if [ -n "${iterations_json}" ]; then
+          while IFS= read -r iter; do
+            start_date=$(echo "${iter}" | jq -r '.startDate')
+            duration=$(echo "${iter}" | jq -r '.duration')
+            iter_title=$(echo "${iter}" | jq -r '.title')
+
+            start_epoch=$(date -d "${start_date}" +%s)
+            end_epoch=$((start_epoch + duration * 86400))
+
+            if [ "${today_epoch}" -ge "${start_epoch}" ] && [ "${today_epoch}" -lt "${end_epoch}" ]; then
+              current_iter=$(echo "${iter}" | jq -r '.id')
+              echo "::notice::Matched current iteration: '${iter_title}' (${start_date}, ${duration}d)"
+              break
+            fi
+          done <<< "${iterations_json}"
+        fi
+
+        if [ -z "${current_iter}" ]; then
+          echo "::warning::No iteration contains today (${today}) — skipping sprint-add"
+          exit 0
+        fi
+
+        # ── Get issue node ID ──────────────────────────────────────────────
+        issue_node_id=$(gh issue view "${ISSUE_NUMBER}" \
+          --repo "${REPO}" \
+          --json id --jq '.id')
+        echo "Issue node ID: ${issue_node_id}"
+
+        # ── Add issue to project ───────────────────────────────────────────
+        echo "::group::Adding issue to project"
+        item_json=$(gh api graphql -f query='
+          mutation($projectId:ID!, $contentId:ID!) {
+            addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}) {
+              item { id }
+            }
+          }
+        ' -F projectId="${project_id}" -F contentId="${issue_node_id}")
+
+        item_id=$(echo "${item_json}" | jq -r '.data.addProjectV2ItemById.item.id')
+        echo "Project item ID: ${item_id}"
+        echo "::endgroup::"
+
+        # ── Set iteration field ────────────────────────────────────────────
+        echo "::group::Setting iteration to current sprint"
+        gh api graphql -f query='
+          mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $iterationId:String!) {
+            updateProjectV2ItemFieldValue(input:{
+              projectId:$projectId
+              itemId:$itemId
+              fieldId:$fieldId
+              value:{iterationId:$iterationId}
+            }) {
+              projectV2Item { id }
+            }
+          }
+        ' -F projectId="${project_id}" \
+          -F itemId="${item_id}" \
+          -F fieldId="${field_id}" \
+          -F iterationId="${current_iter}"
+
+        echo "::notice::Issue #${ISSUE_NUMBER} added to current sprint"
+        echo "::endgroup::"
