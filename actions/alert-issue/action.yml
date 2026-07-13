@@ -152,14 +152,14 @@ runs:
         # ── Extract org from repo input ────────────────────────────────────
         ORG="${REPO%%/*}"
 
-        # ── Query project for iteration field and current iterations ───────
-        echo "::group::Querying project #${PROJECT_NUMBER} for iteration field '${ITERATION_FIELD}'"
+        # ── Query project for iteration field and Status field ───────
+        echo "::group::Querying project #${PROJECT_NUMBER} for iteration field '${ITERATION_FIELD}' and Status field"
         project_json=$(gh api graphql -f query='
-          query($org:String!, $projectNumber:Int!, $fieldName:String!) {
+          query($org:String!, $projectNumber:Int!, $iterationFieldName:String!) {
             organization(login:$org) {
               projectV2(number:$projectNumber) {
                 id
-                field(name:$fieldName) {
+                iterationField: field(name:$iterationFieldName) {
                   ... on ProjectV2IterationField {
                     id
                     configuration {
@@ -172,29 +172,38 @@ runs:
                     }
                   }
                 }
+                statusField: field(name:"Status") {
+                  ... on ProjectV2SingleSelectField {
+                    id
+                    options {
+                      id
+                      name
+                    }
+                  }
+                }
               }
             }
           }
-        ' -F org="${ORG}" -F projectNumber="${PROJECT_NUMBER}" -F fieldName="${ITERATION_FIELD}")
+        ' -F org="${ORG}" -F projectNumber="${PROJECT_NUMBER}" -F iterationFieldName="${ITERATION_FIELD}")
 
         project_id=$(echo "${project_json}" | jq -r '.data.organization.projectV2.id')
-        field_id=$(echo "${project_json}" | jq -r '.data.organization.projectV2.field.id // ""')
+        iteration_field_id=$(echo "${project_json}" | jq -r '.data.organization.projectV2.iterationField.id // ""')
 
-        if [ -z "${field_id}" ] || [ "${field_id}" = "null" ]; then
+        if [ -z "${iteration_field_id}" ] || [ "${iteration_field_id}" = "null" ]; then
           echo "::endgroup::"
           echo "::warning::Iteration field '${ITERATION_FIELD}' not found on project #${PROJECT_NUMBER} — skipping sprint-add"
           exit 0
         fi
 
-        echo "Project ID: ${project_id}"
-        echo "Field ID:   ${field_id}"
+        echo "Project ID:       ${project_id}"
+        echo "Iteration field:  ${iteration_field_id}"
         echo "::endgroup::"
 
         # ── Resolve current iteration (date-range match) ───────────────────
         today=$(date -u +%Y-%m-%d)
         today_epoch=$(date -d "${today}" +%s)
 
-        iterations_json=$(echo "${project_json}" | jq -c '.data.organization.projectV2.field.configuration.iterations[]? // empty')
+        iterations_json=$(echo "${project_json}" | jq -c '.data.organization.projectV2.iterationField.configuration.iterations[]? // empty')
         current_iter=""
 
         if [ -n "${iterations_json}" ]; then
@@ -254,8 +263,35 @@ runs:
           }
         ' -F projectId="${project_id}" \
           -F itemId="${item_id}" \
-          -F fieldId="${field_id}" \
+          -F fieldId="${iteration_field_id}" \
           -F iterationId="${current_iter}"
 
         echo "::notice::Issue #${ISSUE_NUMBER} added to current sprint"
         echo "::endgroup::"
+
+        # ── Set Status to "Development ready" ────────────────────────────
+        status_field_id=$(echo "${project_json}" | jq -r '.data.organization.projectV2.statusField.id // ""')
+        dev_ready_opt=$(echo "${project_json}" | jq -r '.data.organization.projectV2.statusField.options[]? | select(.name == "Development ready") | .id // ""')
+
+        if [ -n "${status_field_id}" ] && [ "${status_field_id}" != "null" ] && [ -n "${dev_ready_opt}" ] && [ "${dev_ready_opt}" != "null" ]; then
+          echo "::group::Setting status to 'Development ready'"
+          gh api graphql -f query='
+            mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!) {
+              updateProjectV2ItemFieldValue(input:{
+                projectId:$projectId
+                itemId:$itemId
+                fieldId:$fieldId
+                value:{singleSelectOptionId:$optionId}
+              }) {
+                projectV2Item { id }
+              }
+            }
+          ' -F projectId="${project_id}" \
+            -F itemId="${item_id}" \
+            -F fieldId="${status_field_id}" \
+            -F optionId="${dev_ready_opt}"
+          echo "::notice::Status set to 'Development ready'"
+          echo "::endgroup::"
+        else
+          echo "::warning::Status field or 'Development ready' option not found on project #${PROJECT_NUMBER} — skipping status set"
+        fi
