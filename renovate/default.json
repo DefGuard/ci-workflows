@@ -25,6 +25,11 @@
       "matchPackageNames": ["*"]
     },
     {
+      "description": "Lockfile maintenance is a general update - dev only, never on stable/release/main",
+      "matchBaseBranches": ["/^stable/.*/", "/^release/.*/", "main"],
+      "lockFileMaintenance": { "enabled": false }
+    },
+    {
       "matchManagers": ["cargo"],
       "matchBaseBranches": ["dev"],
       "groupName": "rust dependencies",
